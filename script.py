@@ -1,14 +1,20 @@
-import numpy as np
+"""Preprocess the training data for the Kaggle Titanic competition.
+
+Train a tree model on the training data, and then make predictions
+for the testing data, and write those predictions to a file.
+
+"""
+
 from sklearn import tree
 
-data = open('train.csv', 'r')
+DATA = open('train.csv', 'r')
 X = []
 Y = []
 
-def cabinFunction(cabin):
-    #Takes in a cabin string, e.g. "B134" and splits it into an array, ['B', '134']
+def cabin_function(cabin):
+    """Take a cabin string, e.g. "B134" and splits it into an array, ['B', '134']"""
     result = []
-    if len(cabin) == 0:
+    if not cabin:
         return [-1, -1]
     if len(cabin) == 1:
         return [ord(cabin[0]), -1]
@@ -16,11 +22,10 @@ def cabinFunction(cabin):
         cabin = cabin[0:4]
     result.append(ord(cabin[0])) #Cabin letter
     cabin = cabin[1:]
-    
-    if cabin != '' and cabin[0] == ' ': #For case when the cabin string is just a letter w/o a number e.g. "F C123"
+    if cabin and cabin[0] == ' ':
+        #For case when the cabin string is just a letter w/o a number e.g. "F C123"
         result.append(-1)
         return result
-        
     index = cabin.find(' ')
     if index >= 0: #If there are multiple cabins, just look at the first one
         num = cabin[:index] #get up to the first space
@@ -31,19 +36,19 @@ def cabinFunction(cabin):
     return result
 
 #TRAINING DATA
-for line in data:
+for line in DATA:
     temp = []
     line = line.split(',')
-    if(line[0].isdigit()):
+    if line[0].isdigit():
         line[-1] = line[-1][0]
         temp.append(int(line[0])) #Passenger ID
         temp.append(int(line[2])) #Pclass
-        if(line[5]=='male'): #Gender
+        if line[5] == 'male': #Gender
             temp.append(0)
         else:
             temp.append(1)
         val = line[6]
-        if val != '':
+        if val:
             temp.append(float(line[6]))
         else:
             temp.append(-1.0)
@@ -52,36 +57,35 @@ for line in data:
         fare = line[10]
         if fare != '':
             temp.append(float(line[10])) #fare
-        
-        arr = cabinFunction(line[11])
+        arr = cabin_function(line[11])
         for item in arr:
-            temp.append(item)    
-     
+            temp.append(item)
         temp.append(ord(line[12]))
-        for i in range(len(temp)):
-            if not (temp[i]):
-                temp[i]=-1
+        for item in temp:
+            if not item:
+                item = -1
         X.append(temp)
         Y.append(int(line[1]))
-classifier = tree.DecisionTreeClassifier(random_state=0,max_depth=7)
-classifier.fit(X, Y)
 
-data.close()
+CLASSIFIER = tree.DecisionTreeClassifier(random_state=0, max_depth=5, min_samples_split=5)
+CLASSIFIER.fit(X, Y)
+
+DATA.close()
 
 #TEST DATA
-data = open('test.csv', 'r')
-resultsfile = open('r.txt', 'w')
+DATA = open('test.csv', 'r')
+RESULTS_FILE = open('r.txt', 'w')
 
-testdata = []
+TEST_DATA = []
 
-for line in data:
+for line in DATA:
     temp = []
     line = line.split(',')
-    if(line[0].isdigit()):
+    if line[0].isdigit():
         #line[-1] = line[-1][0]
         temp.append(line[0]) #Passenger ID
         temp.append(line[1]) #Pclass
-        if(line[4]=='male'):
+        if line[4] == 'male':
             temp.append(0)
         else:
             temp.append(1)
@@ -99,18 +103,18 @@ for line in data:
         else:
             temp.append(-1.0)
 
-        arr = cabinFunction(line[10])
+        arr = cabin_function(line[10])
         for item in arr:
             temp.append(item)
-        
         temp.append(ord(line[11][0]))
-        for i in range(len(temp)):
-            if not (temp[i]):
-                temp[i]=-1
-        testdata.append(temp)
+        for item in temp:
+            if not item:
+                item = -1
+        TEST_DATA.append(temp)
 
-predictions = classifier.predict(testdata)
-resultsfile.write('PassengerId,Survived\n')
-for i in range(len(testdata)):
-    result = '' + str(testdata[i][0]) + ',' + str(predictions[i]) +'\n'
-    resultsfile.write(result) 
+PREDICTIONS = CLASSIFIER.predict(TEST_DATA)
+RESULTS_FILE.write('PassengerId,Survived\n')
+RESULT = ''
+for i, item in enumerate(TEST_DATA):
+    RESULT = '' + str(item[0]) + ',' + str(PREDICTIONS[i]) +'\n'
+    RESULTS_FILE.write(RESULT)
